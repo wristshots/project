@@ -8932,6 +8932,37 @@ exports.default = void 0;
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 var ax = axios.create({
   baseURL: 'http://localhost:3000/'
 });
@@ -8944,26 +8975,61 @@ var _default = {
       caption: '',
       posts: [],
       selected: null,
+      selectedId: null,
+      isWatch: {
+        watch: false,
+        score: 0,
+        message: null
+      },
       showDelete: false,
-      myCroppa: {}
+      myCroppa: {},
+      hrefFacebok: '',
+      hrefTwitter: ''
     };
   },
   methods: {
     toggleForm: function toggleForm() {
       this.section = (this.section + 1) % 2;
+      this.myCroppa.remove();
+      this.isWatch.watch = false;
+      this.isWatch.score = 0;
+      this.isWatch.message = null;
     },
-    generateBlob: function generateBlob() {
+    validateBlob: function validateBlob() {
       var _this = this;
 
-      this.alert = "loading";
+      this.alert = "Validating through Cloud Vision ...";
+      this.myCroppa.generateBlob(function (blob) {
+        var formData = new FormData();
+        formData.append('file', blob);
+        ax.post('/validate', formData, {}).then(function (_ref) {
+          var data = _ref.data;
+          _this.isWatch.score = data.score;
+
+          if (+_this.isWatch.score > 60) {
+            _this.isWatch.watch = true;
+          }
+
+          _this.isWatch.message = "".concat(data.score, "% probability that this is a watch.");
+        }).catch(function (err) {
+          return console.log(err);
+        }).finally(function () {
+          _this.alert = "";
+        });
+      }, 'image/jpeg', 0.9 // 90% compressed jpeg file
+      );
+    },
+    generateBlob: function generateBlob() {
+      var _this2 = this;
+
+      this.alert = " Loading ...";
       this.myCroppa.generateBlob(function (blob) {
         // write code to upload the cropped image file (a file is a blob)
         var formData = new FormData();
-        formData.append('caption', _this.caption);
+        formData.append('caption', _this2.caption);
         formData.append('file', blob);
-        ax.post('/', formData, {}).then(function (_ref) {
-          var data = _ref.data;
-          console.log(data);
+        ax.post('/', formData, {}).then(function (_ref2) {
+          var data = _ref2.data;
 
           if (localStorage.getItem('myPosts')) {
             var newArr = JSON.parse(localStorage.getItem('myPosts'));
@@ -8974,18 +9040,44 @@ var _default = {
             localStorage.setItem('myPosts', JSON.stringify(arr));
           }
 
-          _this.posts.push(data);
+          _this2.posts.push(data);
         }).catch(function (err) {
           return console.log(err);
         }).finally(function () {
-          _this.alert = "";
-          _this.section = 0;
+          _this2.alert = "";
+          _this2.section = 0;
+          _this2.caption = '';
+
+          _this2.myCroppa.remove();
+
+          _this2.isWatch.watch = false;
+          _this2.isWatch.score = 0;
+          _this2.isWatch.message = null;
         });
       }, 'image/jpeg', 0.9 // 90% compressed jpeg file
       );
     },
+    deletePost: function deletePost() {
+      var _this3 = this;
+
+      ax.delete("".concat(this.selectedId)).catch(function (err) {
+        return console.log(err);
+      }).finally(function () {
+        _this3.section = 0;
+        _this3.selected = null;
+        ax.get('/').then(function (_ref3) {
+          var data = _ref3.data;
+          _this3.posts = data;
+        }).catch(function (err) {
+          return console.log(err);
+        });
+      });
+    },
     modal: function modal(ob) {
+      this.selectedId = ob._id;
       this.showDelete = false;
+      this.hrefFacebok = "https://facebook.com/sharer/sharer.php?u=".concat(ob.imageUrl);
+      this.hrefTwitter = "https://twitter.com/intent/tweet/?text=Wristshots&amp;url=".concat(ob.imageUrl);
 
       if (localStorage.getItem('myPosts')) {
         if (localStorage.getItem('myPosts').includes(ob.imageUrl)) {
@@ -9005,14 +9097,20 @@ var _default = {
     }
   },
   mounted: function mounted() {
-    var _this2 = this;
+    var _this4 = this;
 
-    ax.get('/').then(function (_ref2) {
-      var data = _ref2.data;
-      _this2.posts = data;
+    ax.get('/').then(function (_ref4) {
+      var data = _ref4.data;
+      _this4.posts = data;
     }).catch(function (err) {
       return console.log(err);
     });
+  },
+  computed: {
+    barWidth: function barWidth() {
+      var num = this.isWatch.score * (460 / 100);
+      return String(num) + 'px';
+    }
   }
 };
 exports.default = _default;
@@ -9066,13 +9164,7 @@ exports.default = _default;
             }
           ],
           staticClass: "form1",
-          attrs: { enctype: "multipart/form-data" },
-          on: {
-            submit: function($event) {
-              $event.preventDefault()
-              return _vm.upload($event)
-            }
-          }
+          attrs: { enctype: "multipart/form-data" }
         },
         [
           _c(
@@ -9145,6 +9237,84 @@ exports.default = _default;
               on: {
                 click: function($event) {
                   $event.preventDefault()
+                  return _vm.validateBlob($event)
+                }
+              }
+            },
+            [_vm._v("Validate")]
+          ),
+          _c("br"),
+          _vm._v(" "),
+          _c(
+            "div",
+            {
+              directives: [
+                {
+                  name: "show",
+                  rawName: "v-show",
+                  value: _vm.isWatch.message,
+                  expression: "isWatch.message"
+                }
+              ],
+              staticStyle: {
+                width: "460px",
+                height: "1.2rem",
+                margin: "1rem 0",
+                "background-color": "#3b3f44",
+                "border-radius": "0.4rem"
+              },
+              attrs: { id: "progressbarcontainer" }
+            },
+            [
+              _c("div", {
+                staticStyle: {
+                  height: "1.2rem",
+                  margin: "0",
+                  "background-color": "#3599e0",
+                  "border-radius": "0.4rem"
+                },
+                style: { width: _vm.barWidth },
+                attrs: { id: "progressbar" }
+              })
+            ]
+          ),
+          _vm._v(" "),
+          _c(
+            "div",
+            {
+              directives: [
+                {
+                  name: "show",
+                  rawName: "v-show",
+                  value: _vm.isWatch.message,
+                  expression: "isWatch.message"
+                }
+              ],
+              staticStyle: { "margin-bottom": "1rem", "text-align": "center" }
+            },
+            [
+              _c("span", { staticStyle: { "font-size": "0.9rem" } }, [
+                _vm._v("\n        " + _vm._s(_vm.isWatch.message) + "\n      ")
+              ])
+            ]
+          ),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              directives: [
+                {
+                  name: "show",
+                  rawName: "v-show",
+                  value: _vm.isWatch.watch,
+                  expression: "isWatch.watch"
+                }
+              ],
+              staticClass: "button",
+              attrs: { type: "submit" },
+              on: {
+                click: function($event) {
+                  $event.preventDefault()
                   return _vm.generateBlob($event)
                 }
               }
@@ -9153,7 +9323,7 @@ exports.default = _default;
           ),
           _vm._v(" "),
           _c(
-            "span",
+            "p",
             {
               directives: [
                 {
@@ -9162,7 +9332,8 @@ exports.default = _default;
                   value: _vm.alert,
                   expression: "alert"
                 }
-              ]
+              ],
+              staticStyle: { padding: "0.2rem" }
             },
             [_vm._v(_vm._s(_vm.alert))]
           )
@@ -9205,7 +9376,7 @@ exports.default = _default;
       ),
       _vm._v(" "),
       _vm.section === 2
-        ? _c("div", { staticClass: "modal", attrs: { id: "deleteconfirm" } }, [
+        ? _c("div", { staticClass: "modal" }, [
             _c("div", {
               staticClass: "modalcontent",
               domProps: { innerHTML: _vm._s(_vm.selected) }
@@ -9227,7 +9398,7 @@ exports.default = _default;
                       "button",
                       {
                         staticClass: "button button2",
-                        on: { click: _vm.closeModal }
+                        on: { click: _vm.deletePost }
                       },
                       [
                         _c("span", { staticStyle: { color: "#a52812" } }, [
@@ -9244,6 +9415,121 @@ exports.default = _default;
                     on: { click: _vm.closeModal }
                   },
                   [_vm._v("Close")]
+                )
+              ]
+            ),
+            _vm._v(" "),
+            _c(
+              "div",
+              {
+                staticStyle: {
+                  width: "11.6rem",
+                  margin: "0 auto",
+                  display: "flex",
+                  "justify-content": "space-around"
+                }
+              },
+              [
+                _c(
+                  "a",
+                  {
+                    staticClass: "resp-sharing-button__link",
+                    attrs: {
+                      href: _vm.hrefFacebok,
+                      target: "_blank",
+                      rel: "noopener",
+                      "aria-label": ""
+                    }
+                  },
+                  [
+                    _c(
+                      "div",
+                      {
+                        staticClass:
+                          "resp-sharing-button resp-sharing-button--facebook resp-sharing-button--small"
+                      },
+                      [
+                        _c(
+                          "div",
+                          {
+                            staticClass:
+                              "resp-sharing-button__icon resp-sharing-button__icon--solid",
+                            attrs: { "aria-hidden": "true" }
+                          },
+                          [
+                            _c(
+                              "svg",
+                              {
+                                attrs: {
+                                  xmlns: "http://www.w3.org/2000/svg",
+                                  viewBox: "0 0 24 24"
+                                }
+                              },
+                              [
+                                _c("path", {
+                                  attrs: {
+                                    d:
+                                      "M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z"
+                                  }
+                                })
+                              ]
+                            )
+                          ]
+                        )
+                      ]
+                    )
+                  ]
+                ),
+                _vm._v(" "),
+                _c(
+                  "a",
+                  {
+                    staticClass: "resp-sharing-button__link",
+                    attrs: {
+                      href: _vm.hrefTwitter,
+                      target: "_blank",
+                      rel: "noopener",
+                      "aria-label": ""
+                    }
+                  },
+                  [
+                    _c(
+                      "div",
+                      {
+                        staticClass:
+                          "resp-sharing-button resp-sharing-button--twitter resp-sharing-button--small"
+                      },
+                      [
+                        _c(
+                          "div",
+                          {
+                            staticClass:
+                              "resp-sharing-button__icon resp-sharing-button__icon--solid",
+                            attrs: { "aria-hidden": "true" }
+                          },
+                          [
+                            _c(
+                              "svg",
+                              {
+                                attrs: {
+                                  xmlns: "http://www.w3.org/2000/svg",
+                                  viewBox: "0 0 24 24"
+                                }
+                              },
+                              [
+                                _c("path", {
+                                  attrs: {
+                                    d:
+                                      "M23.44 4.83c-.8.37-1.5.38-2.22.02.93-.56.98-.96 1.32-2.02-.88.52-1.86.9-2.9 1.1-.82-.88-2-1.43-3.3-1.43-2.5 0-4.55 2.04-4.55 4.54 0 .36.03.7.1 1.04-3.77-.2-7.12-2-9.36-4.75-.4.67-.6 1.45-.6 2.3 0 1.56.8 2.95 2 3.77-.74-.03-1.44-.23-2.05-.57v.06c0 2.2 1.56 4.03 3.64 4.44-.67.2-1.37.2-2.06.08.58 1.8 2.26 3.12 4.25 3.16C5.78 18.1 3.37 18.74 1 18.46c2 1.3 4.4 2.04 6.97 2.04 8.35 0 12.92-6.92 12.92-12.93 0-.2 0-.4-.02-.6.9-.63 1.96-1.22 2.56-2.14z"
+                                  }
+                                })
+                              ]
+                            )
+                          ]
+                        )
+                      ]
+                    )
+                  ]
                 )
               ]
             )
@@ -11171,7 +11457,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61637" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62092" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
