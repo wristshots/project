@@ -1,2 +1,5 @@
 server/node_modules
+server/max_service_account.json
+server/.env
 client/node_modules
+client/.cache

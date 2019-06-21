@@ -19,8 +19,15 @@ body {
   background-image: linear-gradient(180deg, #264661 0%, #0a243a 100%);
   background-repeat: no-repeat;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Noto Sans", "Ubuntu", "Helvetica Neue", "Cantarell", "Fira Sans", "Droid Sans", sans-serif;
+  color: white;
 }
 
 input {
   border: none;
+}
+
+.contain {
+  border: 1px solid white;
+  margin-left: 2rem;
+  margin-right: 2rem;
 }
