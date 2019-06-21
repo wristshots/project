@@ -24,6 +24,16 @@ class Controller {
       })
       .catch(next)
   }
+
+  static delete(req, res, next) {
+    Post.findByIdAndDelete(req.params.id)
+      .exec()
+      .then(() => {
+        console.log("deleted 1 post")
+        res.status(204).end()
+      })
+      .catch(next)
+  }
 }
 
 module.exports = Controller;
