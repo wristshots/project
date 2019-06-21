@@ -3,11 +3,6 @@ const Controller = require('../controllers/controller')
 const uploadToGCS = require('../middleware/upload')
 const uploadToLocal = multer( {dest: '../imageTemp'} )
 
-// const {Storage} = require('@google-cloud/storage');
-// const storage = new Storage({
-//   keyFilename: './max_service_account.json'
-// }); // Creates a client
-
 const Multer = require('multer');
 const multer = Multer({
   storage: Multer.memoryStorage(),
@@ -18,17 +13,13 @@ const multer = Multer({
 
 router.post('/validate', uploadToLocal.single('file'), (req, res) => {
   if (req.file) {
-      let path = `./imageTemp/${req.file.filename}`;
-      
       const vision = require('@google-cloud/vision');
       const client = new vision.ImageAnnotatorClient({
-
-          keyFilename: './GrouprojectWeek2.json'
-
+          keyFilename: './credentials/GrouprojectWeek2.json'
       });
 
       client
-        .labelDetection(`./tester/test11.jpg`)
+        .labelDetection(`./imageTemp/${req.file.filename}`)
         .then(results => {
           let watchData = null;
           let strapData = null;
@@ -46,6 +37,9 @@ router.post('/validate', uploadToLocal.single('file'), (req, res) => {
           if (watchData !== null) {
               watchData.score = watchData.score * 100
               totalScore = Math.floor(watchData.score)
+              res.status(200).json({
+                score: totalScore
+              })
           }  else {
               watchData = {
                   score: 0
@@ -70,14 +64,14 @@ router.post('/validate', uploadToLocal.single('file'), (req, res) => {
               }   
 
               totalScore = Math.floor((watchData.score + strapData.score + wristData.score)/3)
-
+              res.status(200).json({
+                score: totalScore
+              })
           }
         })
-        .catch(err => {
-          console.error('ERROR:', err);
-        });
+        .catch(next)
   } else {
-      console.log('No File Uploaded')
+    res.status(400).end()
   }
 })
 
