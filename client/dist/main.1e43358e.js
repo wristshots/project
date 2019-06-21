@@ -8896,11 +8896,67 @@ exports.default = void 0;
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+var ax = axios.create({
+  baseURL: 'http://localhost:3000/'
+});
 var _default = {
   data: function data() {
     return {
-      message: 'Hello world'
+      alert: '',
+      section: 0,
+      file: null,
+      caption: '',
+      posts: []
     };
+  },
+  methods: {
+    fileSelect: function fileSelect(event) {
+      this.file = event.target.files[0];
+    },
+    upload: function upload() {
+      var _this = this;
+
+      this.alert = "loading";
+      var formData = new FormData();
+      formData.append('caption', this.caption);
+      formData.append('file', this.file);
+      ax.post('/', formData, {}).then(function (_ref) {
+        var data = _ref.data;
+        console.log(data);
+
+        if (localStorage.getItem('myPosts')) {
+          var newArr = JSON.parse(localStorage.getItem('myPosts'));
+          newArr.push(data.imageUrl);
+          localStorage.setItem('myPosts', JSON.stringify(newArr));
+        } else {
+          var arr = [data.imageUrl];
+          localStorage.setItem('myPosts', JSON.stringify(arr));
+        }
+
+        _this.posts.push(data);
+      }).catch(function (err) {
+        return console.log(err);
+      }).finally(function () {
+        _this.alert = "";
+        document.getElementById('fileinput').value = '';
+      });
+    }
+  },
+  mounted: function mounted() {
+    ax.get('/').then(function (_ref2) {
+      var data = _ref2.data;
+      console.log(data);
+    }).catch(function (err) {
+      return console.log(err);
+    });
   }
 };
 exports.default = _default;
@@ -8917,9 +8973,105 @@ exports.default = _default;
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
   return _c("div", [
-    _c("h1", [_vm._v(_vm._s(_vm.message))]),
+    _c(
+      "header",
+      {
+        staticStyle: {
+          display: "flex",
+          "justify-content": "center",
+          padding: "1rem",
+          color: "#eeeeee",
+          "font-size": "1.5rem"
+        }
+      },
+      [_vm._v("Wristshots")]
+    ),
     _vm._v(" "),
-    _c("input", { attrs: { type: "file", name: "", id: "" } })
+    _c(
+      "button",
+      {
+        on: {
+          click: function($event) {
+            _vm.section = 1
+          }
+        }
+      },
+      [_vm._v("New Post")]
+    ),
+    _vm._v(" "),
+    _c("div", { staticClass: "contain" }, [
+      _c(
+        "form",
+        {
+          directives: [
+            {
+              name: "show",
+              rawName: "v-show",
+              value: _vm.section === 1,
+              expression: "section === 1"
+            }
+          ],
+          attrs: { enctype: "multipart/form-data" },
+          on: {
+            submit: function($event) {
+              $event.preventDefault()
+              return _vm.upload($event)
+            }
+          }
+        },
+        [
+          _c("input", {
+            attrs: { type: "file", name: "file", id: "fileinput" },
+            on: { change: _vm.fileSelect }
+          }),
+          _c("br"),
+          _vm._v(" "),
+          _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.caption,
+                expression: "caption"
+              }
+            ],
+            attrs: {
+              type: "text",
+              name: "",
+              id: "",
+              placeholder: "Enter caption"
+            },
+            domProps: { value: _vm.caption },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.caption = $event.target.value
+              }
+            }
+          }),
+          _vm._v(" "),
+          _c("button", { attrs: { type: "submit" } }, [_vm._v("Upload")]),
+          _c("br"),
+          _vm._v(" "),
+          _c(
+            "span",
+            {
+              directives: [
+                {
+                  name: "show",
+                  rawName: "v-show",
+                  value: _vm.alert,
+                  expression: "alert"
+                }
+              ]
+            },
+            [_vm._v(_vm._s(_vm.alert))]
+          )
+        ]
+      )
+    ])
   ])
 }
 var staticRenderFns = []
@@ -8993,7 +9145,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62898" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52487" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
